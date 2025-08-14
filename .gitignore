@@ -1,0 +1,3 @@
+server/venv/
+server/app/__pycache__/
+*.pyc
