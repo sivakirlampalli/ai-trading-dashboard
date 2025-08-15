@@ -1,3 +1,16 @@
+# Node modules
+client/node_modules/
+
+# Python venv
 server/venv/
-server/app/__pycache__/
+
+# OS junk
+.DS_Store
+Thumbs.db
+
+# Python cache
+__pycache__/
 *.pyc
+
+# Environment files
+.env
