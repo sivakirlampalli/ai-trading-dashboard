@@ -1,17 +1,46 @@
 import React, { useState, useContext } from "react";
-import { AuthContext } from "../context/AuthContext";
+import { AuthContext } from "../AuthContext";
+import { Link, useNavigate } from "react-router-dom"; // <-- add useNavigate
+
+const API_URL = process.env.REACT_APP_API_URL || "http://127.0.0.1:8000";
 
 export default function Login() {
   const { login } = useContext(AuthContext);
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState(null);
+  const navigate = useNavigate(); // <-- add this
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const success = await login(username, password);
-    if (!success) {
-      setError("Invalid username or password");
+    setError(null);
+
+    const formData = new URLSearchParams();
+    formData.append("username", username);
+    formData.append("password", password);
+
+    try {
+      const res = await fetch(`${API_URL}/token`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+        },
+        body: formData.toString(),
+      });
+
+      if (!res.ok) {
+        setError("Invalid username or password");
+        return;
+      }
+
+      const data = await res.json();
+      login(data.access_token, username);
+      console.log('JWT Token:', data.access_token);
+
+      // **Add this line to navigate to dashboard after login**
+      navigate("/", { replace: true });
+    } catch (err) {
+      setError("Network error");
     }
   };
 
@@ -21,7 +50,7 @@ export default function Login() {
       <input
         className="w-full p-2 mb-4"
         type="text"
-        placeholder="Username"
+        placeholder="Email"
         value={username}
         onChange={(e) => setUsername(e.target.value)}
       />
@@ -36,6 +65,9 @@ export default function Login() {
       <button type="submit" className="w-full bg-blue-600 py-2 rounded text-white hover:bg-blue-700">
         Login
       </button>
+      <p className="mt-4 text-gray-400 text-center">
+        Don’t have an account? <Link to="/register" className="text-blue-400 underline">Register here</Link>
+      </p>
     </form>
   );
 }

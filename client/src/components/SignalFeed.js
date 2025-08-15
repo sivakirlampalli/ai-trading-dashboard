@@ -1,19 +1,33 @@
 import React, { useState, useEffect } from "react";
 
-export default function SignalFeed({ refreshKey }) {
+const API_URL = process.env.REACT_APP_API_URL;
+console.log('API_URL:', API_URL);
+
+export default function SignalFeed({ refreshKey, token }) {
   const [signals, setSignals] = useState([]);
 
-  const fetchSignals = async () => {
-    const res = await fetch("http://127.0.0.1:8000/api/signals", {
-      headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
-    });
-    const data = await res.json();
-    setSignals(data);
-  };
-
   useEffect(() => {
+
+    if (!token) return;
+
+
+    // Define fetchSignals here, inside useEffect
+    const fetchSignals = async () => {
+      try {
+        const res = await fetch(`${API_URL}/api/signals`, {
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+        });
+        if (!res.ok) throw new Error("Failed to fetch signals");
+        const data = await res.json();
+        setSignals(data);
+      } catch (err) {
+        console.error("Error fetching signals", err);
+        setSignals([]);
+      }
+    };
+
     fetchSignals();
-  }, [refreshKey]);
+  }, [refreshKey, token]); // Only real dependencies
 
   const getConfidenceColor = (confidenceStr) => {
     const num = parseFloat(confidenceStr.replace("%", ""));

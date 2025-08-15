@@ -5,10 +5,18 @@ export default function Sidebar() {
         TradeDash
       </div>
       <nav className="flex-1 p-4 space-y-2">
-        <a href="#" className="block p-2 rounded hover:bg-gray-700">📊 Dashboard</a>
-        <a href="#" className="block p-2 rounded hover:bg-gray-700">📈 Signals</a>
-        <a href="#" className="block p-2 rounded hover:bg-gray-700">🔔 Alerts</a>
-        <a href="#" className="block p-2 rounded hover:bg-gray-700">⚙ Settings</a>
+        <button className="block w-full text-left p-2 rounded hover:bg-gray-700">
+          📊 Dashboard
+        </button>
+        <button className="block w-full text-left p-2 rounded hover:bg-gray-700">
+          📈 Signals
+        </button>
+        <button className="block w-full text-left p-2 rounded hover:bg-gray-700">
+          🔔 Alerts
+        </button>
+        <button className="block w-full text-left p-2 rounded hover:bg-gray-700">
+          ⚙ Settings
+        </button>
       </nav>
     </div>
   );

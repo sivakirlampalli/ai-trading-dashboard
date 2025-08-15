@@ -1,28 +1,56 @@
 import React, { useState, useEffect } from "react";
 
-export default function Alerts({ refreshKey }) {
-  const [alerts, setAlerts] = useState([]);
+const API_URL = process.env.REACT_APP_API_URL;
+console.log('API_URL:', API_URL); 
 
-  const fetchAlerts = async () => {
-    const res = await fetch("http://127.0.0.1:8000/api/alerts");
-    const data = await res.json();
-    setAlerts(data);
-  };
+export default function Alerts({ refreshKey, token }) {
+  const [alerts, setAlerts] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+
+    if (!token) return;
+    
+    const fetchAlerts = async () => {
+      try {
+        const res = await fetch(`${API_URL}/api/alerts`, {
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+        });
+        const data = await res.json();
+        setAlerts(Array.isArray(data) ? data : []);
+      } catch (err) {
+        console.error("Error fetching alerts:", err);
+        setAlerts([]);
+      } finally {
+        setLoading(false);
+      }
+    };
     fetchAlerts();
-  }, [refreshKey]);
+  }, [refreshKey, token]);
+
+  if (loading) {
+    return (
+      <div className="bg-gray-800 p-4 rounded-lg shadow-md">
+        <h2 className="text-xl font-semibold mb-4">Alerts</h2>
+        <p className="text-gray-400">Loading alerts...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="bg-gray-800 p-4 rounded-lg shadow-md">
       <h2 className="text-xl font-semibold mb-4">Alerts</h2>
-      <ul>
-        {alerts.map((alert, i) => (
-          <li key={i} className="py-2 border-b border-gray-700 last:border-b-0">
-            {alert}
-          </li>
-        ))}
-      </ul>
+      {alerts.length === 0 ? (
+        <p className="text-gray-400">No alerts available.</p>
+      ) : (
+        <ul>
+          {alerts.map((alert, idx) => (
+            <li key={idx} className="py-2 border-b border-gray-700 last:border-b-0 text-yellow-400">
+              {alert}
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 }

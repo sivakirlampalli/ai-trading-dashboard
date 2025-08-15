@@ -2,20 +2,16 @@ import React, { useEffect, useRef } from "react";
 import { createChart, CandlestickSeries } from "lightweight-charts";
 import CsvUpload from "./CsvUpload";
 
-export default function ChartPanel({ onDataUpdated }) {
+const API_URL = process.env.REACT_APP_API_URL;
+console.log('API_URL:', API_URL); 
+
+export default function ChartPanel({ onDataUpdated, token, refreshKey }) {
   const chartContainerRef = useRef();
   const candleSeriesRef = useRef();
 
-  const fetchChartData = async () => {
-    const res = await fetch("http://127.0.0.1:8000/api/chart-data");
-    const data = await res.json();
-    if (candleSeriesRef.current && data.length > 0) {
-      candleSeriesRef.current.setData(data);
-    }
-    if (onDataUpdated) onDataUpdated();
-  };
-
   useEffect(() => {
+    if (!token) return;
+
     const chart = createChart(chartContainerRef.current, {
       width: chartContainerRef.current.clientWidth,
       height: 300,
@@ -42,6 +38,22 @@ export default function ChartPanel({ onDataUpdated }) {
       wickUpColor: "#22c55e",
     });
 
+    const fetchChartData = async () => {
+      try {
+        const res = await fetch(`${API_URL}/api/chart-data`, {
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+        });
+        if (!res.ok) throw new Error("API error: " + res.status);
+        const data = await res.json();
+        if (candleSeriesRef.current && data.length > 0) {
+          candleSeriesRef.current.setData(data);
+        }
+        // Do NOT call onDataUpdated here! Only trigger it on CSV upload.
+      } catch (err) {
+        alert("ERROR: Failed to fetch chart data. Check API URL, backend status, and CORS settings!");
+      }
+    };
+
     fetchChartData();
 
     const handleResize = () =>
@@ -53,11 +65,16 @@ export default function ChartPanel({ onDataUpdated }) {
       window.removeEventListener("resize", handleResize);
       chart.remove();
     };
-  }, []);
+  }, [token, refreshKey]); // Only re-fetch when token or refreshKey changes
 
   return (
     <div className="bg-gray-800 p-4 rounded-lg shadow-md">
-      <CsvUpload onUploadSuccess={fetchChartData} />
+      <CsvUpload
+        onUploadSuccess={() => {
+          if (onDataUpdated) onDataUpdated(); // Triggers refreshKey increment in App, refetching everything!
+        }}
+        token={token}
+      />
       <h2 className="text-xl font-semibold mb-4">Market Chart</h2>
       <div ref={chartContainerRef} className="w-full" />
     </div>

@@ -1,6 +1,9 @@
 import React, { useState } from "react";
 
-export default function CsvUpload({ onUploadSuccess }) {
+const API_URL = process.env.REACT_APP_API_URL;
+console.log('API_URL:', API_URL); 
+
+export default function CsvUpload({ onUploadSuccess, token }) {
   const [file, setFile] = useState(null);
   const [uploading, setUploading] = useState(false);
 
@@ -15,10 +18,14 @@ export default function CsvUpload({ onUploadSuccess }) {
     formData.append("file", file);
 
     try {
-      const res = await fetch("http://127.0.0.1:8000/api/upload-csv", {
+      const res = await fetch(`${API_URL}/api/upload-csv`, {
         method: "POST",
+        headers: {
+          Authorization: token ? `Bearer ${token}` : "",
+        },
         body: formData,
       });
+      if (!res.ok) throw new Error("Upload failed");
       const data = await res.json();
       console.log("Upload result:", data);
       if (onUploadSuccess) {
