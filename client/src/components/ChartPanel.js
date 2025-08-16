@@ -3,15 +3,17 @@ import { createChart, CandlestickSeries } from "lightweight-charts";
 import CsvUpload from "./CsvUpload";
 
 const API_URL = process.env.REACT_APP_API_URL;
-console.log('API_URL:', API_URL); 
+console.log('API_URL:', API_URL);
 
 export default function ChartPanel({ onDataUpdated, token, refreshKey }) {
   const chartContainerRef = useRef();
   const candleSeriesRef = useRef();
 
   useEffect(() => {
-    if (!token) return;
+    // The key safety check
+    if (!token || !chartContainerRef.current) return;
 
+    // Create the chart only if the container exists
     const chart = createChart(chartContainerRef.current, {
       width: chartContainerRef.current.clientWidth,
       height: 300,
@@ -48,7 +50,6 @@ export default function ChartPanel({ onDataUpdated, token, refreshKey }) {
         if (candleSeriesRef.current && data.length > 0) {
           candleSeriesRef.current.setData(data);
         }
-        // Do NOT call onDataUpdated here! Only trigger it on CSV upload.
       } catch (err) {
         alert("ERROR: Failed to fetch chart data. Check API URL, backend status, and CORS settings!");
       }
@@ -65,18 +66,22 @@ export default function ChartPanel({ onDataUpdated, token, refreshKey }) {
       window.removeEventListener("resize", handleResize);
       chart.remove();
     };
-  }, [token, refreshKey]); // Only re-fetch when token or refreshKey changes
+  }, [token, refreshKey]);
 
   return (
     <div className="bg-gray-800 p-4 rounded-lg shadow-md">
       <CsvUpload
         onUploadSuccess={() => {
-          if (onDataUpdated) onDataUpdated(); // Triggers refreshKey increment in App, refetching everything!
+          if (onDataUpdated) onDataUpdated();
         }}
         token={token}
       />
-      <h2 className="text-xl font-semibold mb-4">Market Chart</h2>
-      <div ref={chartContainerRef} className="w-full" />
+      {/* ADD THE CHART CONTAINER */}
+      <div
+        ref={chartContainerRef}
+        style={{ width: "100%", height: 300 }}
+        className="w-full mt-4"
+      />
     </div>
   );
 }

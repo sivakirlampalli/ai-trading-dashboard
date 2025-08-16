@@ -37,8 +37,8 @@ export default function SignalFeed({ refreshKey, token }) {
   };
 
   return (
-    <div className="bg-gray-800 p-4 rounded-lg shadow-md">
-      <h2 className="text-xl font-semibold mb-4">Trade Signals</h2>
+    <div>
+      
       <ul>
         {signals.map((signal) => (
           <li

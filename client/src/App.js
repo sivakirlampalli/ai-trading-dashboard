@@ -4,11 +4,12 @@ import Sidebar from "./components/Sidebar";
 import ChartPanel from "./components/ChartPanel";
 import LiveChartPanel from "./components/LiveChartPanel";
 import SignalFeed from "./components/SignalFeed";
-import Alerts from "./components/Alerts";
 import Login from "./components/Login";
 import Register from "./components/Register";
 import { AuthContext, AuthProvider } from "./AuthContext";
 import DataSelector from "./components/DataSelector";
+import CsvUpload from "./components/CsvUpload";
+
 
 function SignalsPanel({ token, dataSource, symbol }) {
   const [signals, setSignals] = useState([]);
@@ -69,10 +70,9 @@ function DashboardContent({ token, logout, refreshKey, handleDataUpdated }) {
         {/* CSV upload chart and signals */}
         {dataSource === "csv" && (
           <>
-            <ChartPanel
-              onDataUpdated={handleDataUpdated}
+            <CsvUpload
               token={token}
-              refreshKey={refreshKey}
+              onUploadSuccess={handleDataUpdated}
             />
             <SignalFeed refreshKey={refreshKey} token={token} />
           </>
