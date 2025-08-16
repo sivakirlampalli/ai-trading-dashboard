@@ -1,4 +1,6 @@
-📊AI-Powered Trading Dashboard with Real-Time Market Visualization & Signal Generation
+🚀 AI-Powered Trading Dashboard — A web-based platform that provides real-time market insights and visualizations for top tech stocks including Apple, Microsoft, and Google, along with customizable AI-driven trading signals and portfolio tracking.
+
+
 
 🚀 Features
 
