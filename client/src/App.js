@@ -1,4 +1,4 @@
-import React, { useContext, useState, useEffect } from "react";
+import React, { useContext, useState } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 import Sidebar from "./components/Sidebar";
 import ChartPanel from "./components/ChartPanel";
@@ -6,15 +6,15 @@ import LiveChartPanel from "./components/LiveChartPanel";
 import SignalFeed from "./components/SignalFeed";
 import Login from "./components/Login";
 import Register from "./components/Register";
+import LandingPage from "./components/LandingPage";
 import { AuthContext, AuthProvider } from "./AuthContext";
 import DataSelector from "./components/DataSelector";
 import CsvUpload from "./components/CsvUpload";
 
-
 function SignalsPanel({ token, dataSource, symbol }) {
   const [signals, setSignals] = useState([]);
 
-  useEffect(() => {
+  React.useEffect(() => {
     if (!symbol || !(dataSource === "stocks" || dataSource === "crypto")) {
       setSignals([]);
       return;
@@ -70,10 +70,7 @@ function DashboardContent({ token, logout, refreshKey, handleDataUpdated }) {
         {/* CSV upload chart and signals */}
         {dataSource === "csv" && (
           <>
-            <CsvUpload
-              token={token}
-              onUploadSuccess={handleDataUpdated}
-            />
+            <CsvUpload token={token} onUploadSuccess={handleDataUpdated} />
             <SignalFeed refreshKey={refreshKey} token={token} />
           </>
         )}
@@ -82,16 +79,13 @@ function DashboardContent({ token, logout, refreshKey, handleDataUpdated }) {
         {(dataSource === "stocks" || dataSource === "crypto") && symbol && (
           <>
             <LiveChartPanel dataSource={dataSource} symbol={symbol} token={token} />
-
+            {/* Optionally add SignalsPanel here if needed */}
           </>
         )}
-
-        
       </main>
     </div>
   );
 }
-
 
 function AppContent() {
   const { token, logout } = useContext(AuthContext);
@@ -103,10 +97,17 @@ function AppContent() {
 
   return (
     <Routes>
+      {/* If authenticated, / goes straight to dashboard */}
+      <Route
+        path="/"
+        element={
+          token ? <Navigate to="/dashboard" replace /> : <LandingPage />
+        }
+      />
       <Route path="/register" element={<Register />} />
       <Route path="/login" element={<Login />} />
       <Route
-        path="/*"
+        path="/dashboard/*"
         element={
           token ? (
             <DashboardContent
@@ -120,9 +121,11 @@ function AppContent() {
           )
         }
       />
+      <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
 }
+
 
 export default function App() {
   return (

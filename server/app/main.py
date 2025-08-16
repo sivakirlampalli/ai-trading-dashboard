@@ -40,7 +40,7 @@ def get_db():
 # User helpers (omitted here for brevity)
 # JWT Auth setup omitted for brevity (same as before)
 # Existing fetch-stock and fetch-crypto endpoints (as before) with API keys
-API_KEY = "50DDRIH47QJ2OR2W"  # Replace this with your actual key
+API_KEY = "1NYULHARYBWGZXCU"  # Replace this with your actual key
 
 
 @app.get("/api/fetch-stock")
