@@ -1,4 +1,19 @@
-AI-Powered Trading Dashboard with Real-Time Market Visualization & Signal Generation
+📊AI-Powered Trading Dashboard with Real-Time Market Visualization & Signal Generation
+
+🚀 Features
+
+📈 Real-Time Charts – Visualize live stock/crypto price movements.
+
+🤖 AI-Powered Signals – Leverages ML models to generate buy/sell insights.
+
+🛠️ Customizable Dashboard – Add/remove widgets, filter assets, and personalize views.
+
+🔒 Secure API Integration – Market data fetched via environment variables (.env).
+
+📊 Historical Analytics – Explore past trends with zoom/pan-enabled charts.
+
+🎨 Modern UI – Built with TailwindCSS for a clean, responsive design.
+
 Welcome to the AI-Powered Trading Dashboard! This project contains a React frontend and a Python FastAPI backend integrated with SQLite for database management.
 
 Project Structure
