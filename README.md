@@ -86,4 +86,4 @@ You don't need to setup or configure any environment variables for local develop
 If you want to deploy the app later, ensure to configure environment variables and database path appropriately.
 
 Contact
-For any questions, contact [Your Name or Your Email].
+For any questions, contact sivakirlampalli04@gmail.com
