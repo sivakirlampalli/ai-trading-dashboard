@@ -1,7 +1,6 @@
 import React, { useContext, useState } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 import Sidebar from "./components/Sidebar";
-import ChartPanel from "./components/ChartPanel";
 import LiveChartPanel from "./components/LiveChartPanel";
 import SignalFeed from "./components/SignalFeed";
 import Login from "./components/Login";

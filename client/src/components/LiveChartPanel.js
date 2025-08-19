@@ -1,8 +1,8 @@
 import React, { useEffect, useRef, useState } from "react";
 import { createChart, CandlestickSeries } from "lightweight-charts";
+
 const API_URL = process.env.REACT_APP_API_URL || "http://127.0.0.1:8000";
 
-// Utility for backend stocks
 function formatStockData(apiData) {
   const intraday = apiData["Time Series (5min)"];
   const daily = apiData["Time Series (Daily)"];
@@ -20,7 +20,6 @@ function formatStockData(apiData) {
     .sort((a, b) => a.time - b.time);
 }
 
-// Utility for backend crypto
 function formatCryptoOhlc(ohlcData) {
   return ohlcData.map(([time, open, high, low, close]) => ({
     time: Math.floor(time / 1000),
@@ -32,86 +31,72 @@ function formatCryptoOhlc(ohlcData) {
   }));
 }
 
-// SMA crossover signal calculation for local CSV candles
-function getSmaSignals(candles, shortPeriod = 2, longPeriod = 5) {
-  const closes = candles.map(c => c.close);
-  const smaShort = [];
-  const smaLong = [];
-  for (let i = 0; i < candles.length; i++) {
-    smaShort[i] = i >= shortPeriod - 1
-      ? closes.slice(i - shortPeriod + 1, i + 1).reduce((a, b) => a + b, 0) / shortPeriod
-      : null;
-    smaLong[i] = i >= longPeriod - 1
-      ? closes.slice(i - longPeriod + 1, i + 1).reduce((a, b) => a + b, 0) / longPeriod
-      : null;
-  }
-  const signals = [];
-  for (let i = 1; i < candles.length; i++) {
-    if (smaShort[i - 1] == null || smaLong[i - 1] == null) continue;
-    if (smaShort[i] > smaLong[i] && smaShort[i - 1] <= smaLong[i - 1]) {
-      signals.push({ type: "buy", confidence: 90, timestamp: candles[i].time * 1000 });
-    }
-    if (smaShort[i] < smaLong[i] && smaShort[i - 1] >= smaLong[i - 1]) {
-      signals.push({ type: "sell", confidence: 90, timestamp: candles[i].time * 1000 });
-    }
-  }
-  return signals;
-}
-
 export default function LiveChartPanel({ dataSource, symbol, token, csvData }) {
   const chartContainerRef = useRef();
   const candleSeriesRef = useRef();
   const [signals, setSignals] = useState([]);
 
   useEffect(() => {
-    if (!chartContainerRef.current) return;
-    if (!symbol || (dataSource !== "stocks" && dataSource !== "crypto" && dataSource !== "csv-upload")) return;
+    // Fixes the ESLint warning: capture the container node
+    const container = chartContainerRef.current;
 
-    const chart = createChart(chartContainerRef.current, {
-      width: chartContainerRef.current.clientWidth,
+    if (!container) return;
+    if (!symbol ||
+      (dataSource !== "stocks" &&
+        dataSource !== "crypto" &&
+        dataSource !== "csv-upload")
+    ) return;
+
+    // Ensure only one chart at a time
+    while (container.firstChild) {
+      container.removeChild(container.firstChild);
+    }
+
+    const chart = createChart(container, {
+      width: container.clientWidth,
       height: 320,
       layout: { backgroundColor: "#1e293b", textColor: "#d1d5db" },
-      grid: { vertLines: { color: "#334155" }, horzLines: { color: "#334155" } },
+      grid: {
+        vertLines: { color: "#334155" },
+        horzLines: { color: "#334155" }
+      },
       crosshair: { mode: 1 },
       priceScale: { borderColor: "#475569" },
-      timeScale: { borderColor: "#475569", timeVisible: true, secondsVisible: false },
+      timeScale: {
+        borderColor: "#475569",
+        timeVisible: true,
+        secondsVisible: false
+      }
     });
 
     candleSeriesRef.current = chart.addSeries(CandlestickSeries, {
-      upColor: "#22c55e", downColor: "#ef4444",
-      borderDownColor: "#ef4444", borderUpColor: "#22c55e",
-      wickDownColor: "#ef4444", wickUpColor: "#22c55e",
+      upColor: "#22c55e",
+      downColor: "#ef4444",
+      borderDownColor: "#ef4444",
+      borderUpColor: "#22c55e",
+      wickDownColor: "#ef4444",
+      wickUpColor: "#22c55e"
     });
 
     const fetchData = async () => {
       let candles = [];
-
-      // CSV upload branch — local signals only!
       if (dataSource === "csv-upload" && csvData) {
-        candles = csvData.map(row => ({
-          time: Math.floor(new Date(row.timestamp).getTime() / 1000),
-          open: parseFloat(row.open),
-          high: parseFloat(row.high),
-          low: parseFloat(row.low),
-          close: parseFloat(row.close),
-          volume: parseFloat(row.volume),
-        })).sort((a, b) => a.time - b.time);
+        candles = csvData
+          .map(row => ({
+            time: Math.floor(new Date(row.timestamp).getTime() / 1000),
+            open: parseFloat(row.open),
+            high: parseFloat(row.high),
+            low: parseFloat(row.low),
+            close: parseFloat(row.close),
+            volume: parseFloat(row.volume)
+          }))
+          .sort((a, b) => a.time - b.time);
 
-        const signalsFromSma = getSmaSignals(candles, 3, 8); // you can lower periods as needed for demo
-        setSignals(signalsFromSma);
+        setSignals([]);
 
         if (typeof candleSeriesRef.current.setMarkers === "function") {
-          candleSeriesRef.current.setMarkers(
-            signalsFromSma.map(sig => ({
-              time: Math.floor(sig.timestamp / 1000),
-              position: sig.type === "buy" ? "belowBar" : "aboveBar",
-              color: sig.type === "buy" ? "#22c55e" : "#ef4444",
-              shape: sig.type === "buy" ? "arrowUp" : "arrowDown",
-              text: sig.type.toUpperCase(),
-            }))
-          );
+          candleSeriesRef.current.setMarkers([]);
         }
-
         if (!candles || candles.length === 0) {
           alert("ERROR: No candle data available for " + symbol);
           setSignals([]);
@@ -120,31 +105,16 @@ export default function LiveChartPanel({ dataSource, symbol, token, csvData }) {
         candleSeriesRef.current.setData(candles);
         return;
       }
-
-      // Stocks/crypto logic (keep as is)
       if (dataSource === "stocks") {
-        const url = `${API_URL}/api/fetch-stock?symbol=${symbol}`;
-        const res = await fetch(url, { headers: token ? { Authorization: `Bearer ${token}` } : {} });
+        const url = `${API_URL}/api/fetch-stock?symbol=${symbol.toUpperCase()}`;
+        const res = await fetch(url, {
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+        });
         const apiData = await res.json();
         candles = formatStockData(apiData);
-        const signalsUrl = `${API_URL}/api/stock-signals-sma?symbol=${symbol}`;
-        const signalsRes = await fetch(signalsUrl);
-        const signalsData = await signalsRes.json();
-        setSignals(signalsData);
-        if (typeof candleSeriesRef.current.setMarkers === "function") {
-          candleSeriesRef.current.setMarkers(
-            signalsData.map(sig => ({
-              time: Math.floor(new Date(sig.timestamp).getTime() / 1000),
-              position: sig.type === "buy" ? "belowBar" : "aboveBar",
-              color: sig.type === "buy" ? "#22c55e" : "#ef4444",
-              shape: sig.type === "buy" ? "arrowUp" : "arrowDown",
-              text: sig.type.toUpperCase(),
-            }))
-          );
-        }
       }
       else if (dataSource === "crypto") {
-        const url = `${API_URL}/api/fetch-crypto-ohlc?symbol=${symbol.toLowerCase()}&days=7`;
+        const url = `${API_URL}/api/fetch-crypto-ohlc?symbol=${symbol.toLowerCase()}&days=1`;
         const res = await fetch(url);
         const ohlcData = await res.json();
         if (!Array.isArray(ohlcData)) {
@@ -153,21 +123,6 @@ export default function LiveChartPanel({ dataSource, symbol, token, csvData }) {
           return;
         }
         candles = formatCryptoOhlc(ohlcData);
-        const signalsUrl = `${API_URL}/api/live-signals-sma?symbol=${symbol.toLowerCase()}`;
-        const signalsRes = await fetch(signalsUrl);
-        const signalsData = await signalsRes.json();
-        setSignals(signalsData);
-        if (typeof candleSeriesRef.current.setMarkers === "function") {
-          candleSeriesRef.current.setMarkers(
-            signalsData.map(sig => ({
-              time: sig.timestamp,
-              position: sig.type === "buy" ? "belowBar" : "aboveBar",
-              color: sig.type === "buy" ? "#22c55e" : "#ef4444",
-              shape: sig.type === "buy" ? "arrowUp" : "arrowDown",
-              text: sig.type.toUpperCase(),
-            }))
-          );
-        }
       }
       if (!candles || candles.length === 0) {
         alert("ERROR: No candle data available for " + symbol);
@@ -178,44 +133,90 @@ export default function LiveChartPanel({ dataSource, symbol, token, csvData }) {
     };
 
     fetchData();
-    const handleResize = () =>
-      chart.applyOptions({ width: chartContainerRef.current.clientWidth });
-    window.addEventListener("resize", handleResize);
+
+    const resizeHandler = () =>
+      chart.applyOptions({ width: container.clientWidth });
+    window.addEventListener("resize", resizeHandler);
+
     return () => {
-      window.removeEventListener("resize", handleResize);
+      window.removeEventListener("resize", resizeHandler);
       chart.remove();
     };
   }, [dataSource, symbol, token, csvData]);
 
-  const latestSignal = signals.length > 0 ? signals[signals.length - 1] : null;
+  useEffect(() => {
+    if (!symbol || !(dataSource === "stocks" || dataSource === "crypto")) return;
+    const pollSignals = () => {
+      fetch(`${API_URL}/api/latest-signals?symbol=${symbol.toUpperCase()}`)
+        .then(res => res.json())
+        .then(data => {
+          if (Array.isArray(data)) {
+            setSignals(data);
+            if (
+              candleSeriesRef.current &&
+              typeof candleSeriesRef.current.setMarkers === "function"
+            ) {
+              candleSeriesRef.current.setMarkers(
+                data.map(sig => ({
+                  time:
+                    typeof sig.timestamp === "number"
+                      ? Math.floor(sig.timestamp)
+                      : Math.floor(new Date(sig.timestamp).getTime() / 1000),
+                  position: sig.type === "buy" ? "belowBar" : "aboveBar",
+                  color: sig.type === "buy" ? "#22c55e" : "#ef4444",
+                  shape: sig.type === "buy" ? "arrowUp" : "arrowDown",
+                  text: sig.type.toUpperCase()
+                }))
+              );
+            }
+          } else {
+            setSignals([]);
+          }
+        })
+        .catch(() => setSignals([]));
+    };
+    pollSignals();
+    const interval = setInterval(pollSignals, 90000); // 90 sec, to respect rate limits
+    return () => clearInterval(interval);
+  }, [symbol, dataSource]);
+
+  const latestSignal = Array.isArray(signals) && signals.length > 0 ? signals[signals.length - 1] : null;
 
   return (
     <div className="bg-gray-800 p-4 rounded-lg shadow-md mb-4">
       <h2 className="text-xl font-semibold mb-4">
         {symbol ? `${symbol.toUpperCase()} Live Market Chart` : "Live Market Chart"}
       </h2>
-      <div ref={chartContainerRef} style={{ width: "100%", height: "320px" }} className="w-full" />
-
+      <div
+        ref={chartContainerRef}
+        style={{ width: "100%", height: "320px" }}
+        className="w-full"
+      />
       <div className="mt-4">
         <h3 className="text-lg font-bold mb-2">Trade Signals</h3>
-        {signals.length === 0 ? (
+        {Array.isArray(signals) && signals.length === 0 ? (
           <p>No signals.</p>
         ) : (
           <ul>
-            {signals.map((sig, idx) => (
+            {Array.isArray(signals) ? signals.map((sig, idx) => (
               <li key={idx}>
-                {sig.type.toUpperCase()} (<b>{sig.confidence}%</b>) at {new Date(sig.timestamp).toLocaleString()}
+                {sig.type.toUpperCase()} (<b>{sig.confidence}%</b>) at{" "}
+                {typeof sig.timestamp === "number"
+                  ? new Date(sig.timestamp * 1000).toLocaleString()
+                  : new Date(sig.timestamp).toLocaleString()}
               </li>
-            ))}
+            )) : <li>Invalid signal data from backend</li>}
           </ul>
         )}
       </div>
-
       <div className="mt-4">
         <h3 className="text-lg font-bold mb-2">Alerts</h3>
         {latestSignal ? (
           <p>
-            {latestSignal.type.toUpperCase()} ({latestSignal.confidence}%) at {new Date(latestSignal.timestamp).toLocaleString()}
+            {latestSignal.type.toUpperCase()} ({latestSignal.confidence}%) at{" "}
+            {typeof latestSignal.timestamp === "number"
+              ? new Date(latestSignal.timestamp * 1000).toLocaleString()
+              : new Date(latestSignal.timestamp).toLocaleString()}
           </p>
         ) : (
           <p>No alerts available.</p>

@@ -1,64 +1,34 @@
 import React, { useState, useEffect } from "react";
 
-const API_URL = process.env.REACT_APP_API_URL;
-console.log('API_URL:', API_URL);
+const API_URL = process.env.REACT_APP_API_URL || "http://localhost:8000";
+const DEFAULT_SYMBOL = "AAPL"; // or user-selectable
 
-export default function SignalFeed({ refreshKey, token }) {
+export default function SignalFeed() {
   const [signals, setSignals] = useState([]);
 
   useEffect(() => {
-
-    if (!token) return;
-
-
-    // Define fetchSignals here, inside useEffect
     const fetchSignals = async () => {
       try {
-        const res = await fetch(`${API_URL}/api/signals`, {
-          headers: token ? { Authorization: `Bearer ${token}` } : {},
-        });
+        const res = await fetch(`${API_URL}/api/latest-signals?symbol=${DEFAULT_SYMBOL}`);
         if (!res.ok) throw new Error("Failed to fetch signals");
         const data = await res.json();
-        setSignals(data);
+        setSignals(Array.isArray(data) ? data : []);
       } catch (err) {
-        console.error("Error fetching signals", err);
+        console.error("Error fetching live signals", err);
         setSignals([]);
       }
     };
-
     fetchSignals();
-  }, [refreshKey, token]); // Only real dependencies
-
-  const getConfidenceColor = (confidenceStr) => {
-    const num = parseFloat(confidenceStr.replace("%", ""));
-    if (num >= 60) return "text-green-500";
-    if (num >= 30) return "text-yellow-500";
-    return "text-red-500";
-  };
+    const interval = setInterval(fetchSignals, 60000);
+    return () => clearInterval(interval);
+  }, []);
 
   return (
     <div>
-      
       <ul>
-        {signals.map((signal) => (
-          <li
-            key={signal.id}
-            className="flex justify-between py-2 border-b border-gray-700 last:border-b-0"
-          >
-            <span>{signal.symbol}</span>
-            <span
-              className={
-                signal.type === "Buy"
-                  ? "text-green-400 font-semibold"
-                  : "text-red-400 font-semibold"
-              }
-            >
-              {signal.type}
-            </span>
-            <span className={`${getConfidenceColor(signal.confidence)} font-semibold`}>
-              {signal.confidence}
-            </span>
-            <span className="text-gray-400 text-sm">{signal.time}</span>
+        {signals.map((signal, idx) => (
+          <li key={idx}>
+            {signal.type} ({signal.confidence}%) at {signal.timestamp}
           </li>
         ))}
       </ul>
